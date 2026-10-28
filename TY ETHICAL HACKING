@@ -1,0 +1,260 @@
+
+Practical 2: Network Scanning using Nmap and Zenmap
+
+
+Aim	To perform network and port scanning on a target host/subnet using Nmap (CLI) and Zenmap (GUI) to identify live hosts, open ports, running services, and the operating system.
+Software Required	Nmap, Zenmap, a Linux/Windows machine with network access to a test target (e.g. scanme.nmap.org or a lab VM).
+
+Theory
+Nmap (Network Mapper) is an open-source utility for network discovery and security auditing. It sends crafted packets to target hosts and analyses the responses to determine which hosts are up, which ports are open, which services and versions are running, and (optionally) which operating system the host is running. Zenmap is Nmap's official GUI front-end, useful for visualising scan results as topology graphs and for beginners who prefer not to memorise CLI flags.
+Common scan types:
+•	TCP SYN scan (-sS): sends a SYN packet and reads the response without completing the handshake — fast and relatively stealthy.
+•	TCP Connect scan (-sT): completes the full TCP handshake; used when raw sockets are unavailable.
+•	UDP scan (-sU): probes UDP ports, slower and less reliable than TCP scans.
+•	Service/version detection (-sV): probes open ports to determine the service and version banner.
+•	OS detection (-O): fingerprints the TCP/IP stack to guess the target OS.
+•	Aggressive scan (-A): combines -sV, -O, script scanning, and traceroute.
+
+Procedure
+1.	Install Nmap and Zenmap (Zenmap bundles Nmap on Windows; on Linux, install separately).
+sudo apt update && sudo apt install nmap zenmap -y
+# Installs the Nmap scan engine and the Zenmap GUI front-end
+2.	Identify the target. For lab practice, use a host you own or a sanctioned test target such as scanme.nmap.org.
+3.	Perform a basic ping sweep to discover live hosts on a subnet:
+nmap -sn 192.168.1.0/24
+# -sn disables port scanning and only checks which hosts respond (host discovery)
+4.	Perform a default TCP SYN scan on the top 1000 ports of a single host:
+sudo nmap -sS 192.168.1.10
+# -sS performs a stealthy half-open SYN scan; requires root/administrator privileges
+5.	Scan a specific range of ports:
+nmap -p 1-1000 192.168.1.10
+# -p restricts the scan to ports 1 through 1000
+6.	Detect service versions running on open ports:
+nmap -sV 192.168.1.10
+# -sV grabs banners/probes services to report product and version
+7.	Attempt OS fingerprinting:
+sudo nmap -O 192.168.1.10
+# -O compares TCP/IP stack behaviour against Nmap's OS signature database
+8.	Run a comprehensive aggressive scan:
+sudo nmap -A -T4 192.168.1.10
+# -A = OS detection + version detection + script scanning + traceroute; -T4 speeds up timing
+9.	Repeat the same scan in Zenmap: open Zenmap, enter the target IP in the "Target" field, choose a profile (e.g. "Intense scan") from the "Profile" dropdown, and click "Scan".
+10.	In Zenmap, examine the Ports/Hosts tab for the open-port table, the Topology tab for a visual host map, and the Host Details tab for OS and service summaries.
+11.	Record the output: list of live hosts, open ports, detected services/versions, and (if detected) the OS.
+Note: Only scan systems you own or are explicitly authorised to test. Unauthorised scanning of third-party networks can violate the IT Act, 2000 and similar laws.
+Conclusion
+Nmap and Zenmap were used to perform host discovery, port scanning, service/version detection, and OS fingerprinting on a test target, demonstrating how reconnaissance tools map the attack surface of a network as the first phase of a penetration test.
+
+
+
+
+
+Practical 3: Network Commands — ping, ifconfig, netstat, traceroute
+
+
+Aim	To study and demonstrate essential command-line networking utilities used for connectivity testing, interface configuration, connection monitoring, and route tracing.
+Software Required	A terminal (Linux/macOS) or Command Prompt / PowerShell (Windows) with network access.
+
+Theory
+These four utilities form the backbone of day-to-day network troubleshooting and reconnaissance:
+•	ping — sends ICMP Echo Request packets to a host and measures the Echo Reply round-trip time, confirming reachability and latency.
+•	ifconfig / ipconfig — displays and configures network interface parameters: IP address, subnet mask, MAC address, and interface status.
+•	netstat — displays active TCP/UDP connections, listening ports, and routing/interface statistics, useful for spotting unexpected open connections.
+•	traceroute / tracert — maps the hop-by-hop path packets take to a destination by sending packets with increasing TTL values and recording which router replies at each hop.
+
+Procedure
+A. ping
+12.	Test basic reachability to a host:
+ping google.com
+# Sends ICMP Echo Requests; Ctrl+C to stop on Linux (Windows sends 4 and stops automatically)
+13.	Limit to a fixed number of packets and show summary statistics:
+ping -c 4 8.8.8.8          # Linux ping -n 4 8.8.8.8          # Windows
+# -c / -n sets the packet count; output reports min/avg/max RTT and packet loss %
+B. ifconfig / ipconfig
+14.	View all network interfaces and their assigned IPs:
+ifconfig          # Linux/macOS (or: ip addr) ipconfig /all     # Windows
+# Shows interface name, inet (IPv4), inet6, netmask, and MAC (ether) address
+15.	Bring an interface up/down (Linux) for troubleshooting:
+sudo ifconfig eth0 down sudo ifconfig eth0 up
+# Disables then re-enables the eth0 interface
+C. netstat
+16.	List all active connections and listening ports:
+netstat -a
+# -a shows both listening and established connections
+17.	Show listening ports with the owning process ID:
+netstat -tulnp     # Linux netstat -ano       # Windows
+# -t/-u = TCP/UDP, -l = listening only, -n = numeric addresses, -p = process name/PID
+18.	Display the routing table:
+netstat -r
+# -r prints the kernel's IP routing table
+D. traceroute / tracert
+19.	Trace the path to a destination host:
+traceroute google.com     # Linux/macOS tracert google.com        # Windows
+# Each line is one hop (router) with its IP/hostname and three RTT samples
+20.	Record any hops that time out (shown as * * *), which may indicate firewalls dropping ICMP/TTL-expired packets.
+Conclusion
+ping, ifconfig/ipconfig, netstat, and traceroute/tracert were used to test host reachability, inspect interface configuration, audit active connections, and trace the network path to a destination — core diagnostic skills for both network administration and reconnaissance.
+
+
+
+
+Practical 4: Reconnaissance and WHOIS
+
+
+
+Aim	To perform passive reconnaissance on a target domain using the WHOIS protocol and allied OSINT techniques to gather registrant, registrar, and DNS information.
+Software Required	whois (CLI) or an online WHOIS lookup service; a web browser.
+
+Theory
+Reconnaissance (footprinting) is the first phase of ethical hacking, in which information about a target is gathered without directly interacting with its systems (passive recon) or through light direct interaction (active recon). WHOIS is a query/response protocol used to look up the registered users of a domain name or IP address block. A WHOIS record typically reveals the registrar, creation/expiry dates, name servers, and (where not redacted by privacy protection) registrant contact details. OSINT (Open Source Intelligence) extends this with publicly available information from search engines, social media, and DNS records to build a profile of the target organisation.
+
+Procedure
+21.	Install the whois client (Linux) or use an online service such as whois.domaintools.com / ICANN Lookup for Windows:
+sudo apt install whois -y
+22.	Query WHOIS information for a target domain:
+whois example.com
+# Returns registrar, registration/expiry dates, name servers, and registrant details if public
+23.	Note key fields from the output: Registrar, Creation Date, Registry Expiry Date, Name Server(s), and Domain Status.
+24.	Perform a reverse WHOIS / IP WHOIS lookup on the resolved IP address:
+whois $(dig +short example.com)
+# dig +short resolves the domain to an IP, which is then piped into whois to find the owning organisation/ISP
+25.	Supplement WHOIS with DNS reconnaissance to enumerate records:
+dig example.com ANY nslookup -type=mx example.com
+# Lists A, MX, NS, TXT records that reveal mail servers, subdomains, and hosting providers
+26.	Cross-reference findings with publicly available OSINT sources (company website, LinkedIn, Google dorking) to build a footprint report covering: domain ownership, hosting provider, mail infrastructure, and any exposed subdomains.
+27.	Document all findings in a reconnaissance report, flagging anything that appears to be an information-disclosure risk (e.g. unredacted registrant email).
+Note: Reconnaissance should be limited to information that is already public, or performed only against systems you are authorised to test.
+Conclusion
+WHOIS lookups and supporting DNS/OSINT queries were used to gather public registration and infrastructure details about a target domain, illustrating how passive reconnaissance builds the initial footprint of a target before any active engagement.
+
+Practical 5: Password Security, Dictionary Attacks and CrypTool
+Aim	To understand password hashing and the mechanics of a dictionary attack, and to use CrypTool to generate hashes and demonstrate cryptanalysis concepts.
+Software Required	CrypTool 2 (or CrypTool 1), a sample wordlist (e.g. rockyou.txt excerpt), a test hash value.
+
+Theory
+Passwords are rarely stored in plaintext; systems store a cryptographic hash (e.g. MD5, SHA-1, SHA-256) of the password and compare hashes at login time. A dictionary attack attempts to recover a password by hashing every word in a pre-built wordlist (a "dictionary" of common passwords/leaked credentials) and comparing each resulting hash against the target hash, rather than exhaustively trying every possible character combination (brute force). Dictionary attacks succeed quickly against weak or commonly-reused passwords but fail against passwords absent from the wordlist, which is why length, randomness, and salting are recommended defences. CrypTool is an open-source e-learning tool for cryptography that lets users generate hashes, encrypt/decrypt text with classical and modern ciphers, and visualise attacks such as brute force and frequency analysis in a safe, contained environment.
+
+Procedure
+A. Hash generation in CrypTool
+28.	Open CrypTool 2 and start a new empty workspace.
+29.	Drag a "Text Input" component onto the workspace and type a sample password, e.g. password123.
+30.	Drag a "Hash" component (choose MD5 or SHA-256) onto the workspace and connect the Text Input's output to the Hash component's input.
+31.	Add a "Text Output" component connected to the Hash output and run the workflow to view the resulting hash value.
+32.	Repeat with a slightly different password (e.g. Password123) and observe the avalanche effect — a one-character change produces a completely different hash.
+B. Dictionary attack demonstration
+33.	Prepare a small wordlist file containing common passwords, one per line:
+password 123456 admin qwerty password123
+34.	In CrypTool 2, use the "Dictionary Attack" / "Password Quality Estimator" building block (or, on CrypTool 1, Analysis → Tools → Password Quality Meter) and load the wordlist.
+35.	Supply the target hash value computed in part A and let CrypTool iterate through the wordlist, hashing each entry and comparing it to the target.
+36.	Observe that the attack succeeds instantly when the password is present in the wordlist, and record the time taken.
+37.	Repeat with a strong, random 14-character password not present in any common wordlist and observe that the dictionary attack fails, demonstrating why password complexity and uniqueness matter.
+38.	Summarise mitigations: salting hashes, using slow hash functions (bcrypt/Argon2), enforcing minimum password complexity, and rate-limiting login attempts.
+Conclusion
+CrypTool was used to generate password hashes and simulate a dictionary attack, demonstrating both how quickly weak, wordlist-predictable passwords are cracked and how hashing algorithm choice and password strength affect resistance to such attacks.
+
+
+
+Practical 6: Wireshark and Network Traffic Analysis
+
+
+Aim	To capture and analyse live network traffic using Wireshark, applying display filters to isolate protocols of interest and inspect packet contents.
+Software Required	Wireshark, a network interface with traffic (e.g. own LAN/Wi-Fi), administrator/root privileges for packet capture.
+
+Theory
+Wireshark is an open-source packet analyser that captures traffic traversing a network interface and decodes it down to the protocol layer, letting an analyst inspect Ethernet, IP, TCP/UDP, and application-layer (HTTP, DNS, etc.) headers and payloads for a single frame. It is used for troubleshooting, protocol learning, and — from a security standpoint — for detecting anomalies such as plaintext credential transmission, unusual destination ports, or ARP/DNS spoofing traffic.
+
+Procedure
+39.	Install Wireshark and, during setup on Linux, add your user to the wireshark group so capture does not require sudo each time:
+sudo apt install wireshark -y sudo usermod -aG wireshark $USER
+40.	Launch Wireshark and select the active network interface (e.g. eth0 / Wi-Fi) from the start screen to begin a live capture.
+41.	Generate some traffic in the background (browse a website, run a ping) so there is data to observe.
+42.	Stop the capture after 30–60 seconds using the red square ("Stop") button.
+43.	Apply a display filter to isolate HTTP traffic:
+http
+# Shows only packets whose application-layer protocol is HTTP
+44.	Apply a filter to isolate traffic to/from a specific IP:
+ip.addr == 142.250.195.78
+45.	Apply a filter to isolate DNS queries:
+dns
+46.	Right-click a TCP packet and choose "Follow → TCP Stream" to reassemble the full conversation between client and server in one readable view.
+47.	Inspect the packet details pane (middle panel) to expand the Ethernet, IP, and TCP/UDP headers of a selected packet, noting source/destination MAC, IP, and port.
+48.	If capturing traffic from an unencrypted HTTP login form on a lab/test site, use the filter below to demonstrate why HTTPS is necessary:
+http.request.method == "POST"
+# Isolates POST requests, which often carry submitted form data such as login credentials in plaintext over HTTP
+49.	Save the capture as a .pcapng file for the journal submission: File → Save As.
+Note: Only capture traffic on networks you own or are authorised to monitor; capturing traffic on a shared/public network without consent may be unlawful.
+Conclusion
+Wireshark was used to capture live packets and apply display filters (http, dns, ip.addr, TCP Stream) to analyse protocol behaviour, demonstrating how unencrypted traffic can expose sensitive data and why encryption (HTTPS/TLS) is essential.
+
+
+
+Practical 7: Keyloggers — Concept, Working and Defence (Python)
+
+
+Aim	To study the working principle of software keyloggers, their legitimate and illegitimate uses, and the defensive/detection measures against them.
+Note on scope	This section covers the concept, architecture, legal framework, and detection/defence side only. Functional keystroke-capturing code is not included below, since working keylogger code is spyware/surveillance malware regardless of the academic framing, and that falls outside what I can help write — even for a coursework exercise. Your faculty-provided lab code or textbook listing is the appropriate source for the actual script to paste into your journal; I'm glad to help you understand, comment on, or debug code you already have.
+
+Theory
+A keylogger is a program (software) or device (hardware) that records keystrokes made on a keyboard, typically without the user's awareness, and stores or transmits the captured data for later review. Software keyloggers commonly hook into OS-level keyboard input APIs (e.g. Windows' SetWindowsHookEx, or cross-platform input-event listener libraries) to intercept each keypress, then write it to a local log file or exfiltrate it over the network/email.
+Legitimate uses include employer-monitored corporate devices (with disclosed policy and consent), parental controls, and accessibility/usability research. Illegitimate uses include credential theft, corporate espionage, and stalkerware — which is why keylogging software is tightly regulated: under India's IT Act, 2000 (Sections 43 and 66), unauthorised interception of computer activity, including keystroke capture without consent, is a punishable offence, and similar interception/wiretap statutes exist in most jurisdictions.
+
+Typical Architecture (conceptual)
+•	Input hook/listener: registers a low-level callback with the OS to receive every keypress event.
+•	Buffer/formatter: converts raw key codes into readable text, often tagging the active window title for context.
+•	Storage/exfiltration: writes to a local encrypted/hidden log, or periodically sends the log to a remote endpoint (e.g. via email or an HTTP POST).
+•	Persistence: many malicious keyloggers add themselves to startup entries/registry run keys to survive reboot — a key indicator used in detection.
+
+Detection and Defence
+50.	Use endpoint protection/anti-malware software with behavioural detection, since keyloggers often evade signature-based scanning.
+51.	Review running processes and startup entries (Task Manager → Startup; msconfig; or autoruns.exe on Windows) for unfamiliar entries.
+52.	Monitor outbound network connections with netstat or a firewall for unexpected traffic to unknown hosts, since many keyloggers exfiltrate logs over the network.
+53.	Use a virtual/on-screen keyboard for highly sensitive input (e.g. net-banking) on untrusted machines, since this can bypass some hardware/software hooks.
+54.	Keep OS and drivers patched, since some keyloggers exploit known vulnerabilities to install with elevated privileges.
+55.	On organisation-owned systems, disclose any legitimate monitoring in a written policy that employees acknowledge, to stay within consent-based legal boundaries.
+
+import re
+
+def check_password(pw):
+    score = 0
+    if len(pw) >= 8: score += 1
+    if re.search(r"[A-Z]", pw): score += 1
+    if re.search(r"[a-z]", pw): score += 1
+    if re.search(r"\d", pw): score += 1
+    if re.search(r"[^A-Za-z0-9]", pw): score += 1
+    levels = {0: "Very weak", 1: "Very weak", 2: "Weak", 3: "Medium", 4: "Strong", 5: "Very strong"}
+    return levels[score]
+
+pw = input("Enter a password: ")
+print("Strength:", check_password(pw))
+
+
+Conclusion
+The architecture, legitimate/illegitimate use cases, and detection/defensive measures for software keyloggers were studied, highlighting both how input-capture surveillance works at a technical level and the legal and ethical boundaries around its use.
+
+
+
+Practical 8: ARP Poisoning and Cain & Abel
+
+
+Aim	To understand the ARP protocol's trust model, how ARP poisoning (spoofing) enables a man-in-the-middle position on a LAN, and to study the Cain & Abel tool's ARP poisoning (APR) module in a controlled lab setting.
+Software Required	Cain & Abel (Windows), an isolated lab network with at least two additional hosts (victim and gateway/another host), all owned by you or your lab.
+
+Theory
+The Address Resolution Protocol (ARP) maps a known IP address to the corresponding MAC address on a local network so that Ethernet frames can be delivered to the right device. ARP has no built-in authentication: any host can broadcast an unsolicited ARP reply (a "gratuitous ARP"), and other hosts on the segment will trust it and update their ARP cache accordingly. ARP poisoning (ARP spoofing) abuses this by sending forged ARP replies that associate the attacker's MAC address with the IP address of a legitimate host (commonly the default gateway), causing the victim's traffic intended for the gateway to be routed through the attacker's machine instead — a man-in-the-middle (MITM) position from which traffic can be sniffed, logged, or modified before being forwarded on.
+Cain & Abel is a legacy Windows password-recovery and network-analysis suite that includes an "APR" (ARP Poison Routing) module for demonstrating this attack, alongside sniffing and password-recovery tools, making it a long-standing teaching tool for MITM concepts in ethical hacking courses.
+
+Procedure
+56.	Set up an isolated lab network (a virtual switch/NAT network in VirtualBox/VMware, or a physically segregated test LAN) containing at least: the attacker machine (Cain & Abel), a victim VM, and the default gateway.
+57.	Install Cain & Abel on the attacker machine and launch it with administrator privileges.
+58.	Select the correct network adapter under Configure → Sniffer tab, then click the sniffer icon (green network card) in the toolbar to start the built-in packet sniffer.
+59.	Open the "Sniffer" tab, right-click the host list, and choose "Scan MAC Addresses" to populate the list of live hosts and their MAC/IP pairs on the segment.
+60.	Switch to the "APR" tab at the bottom of the Sniffer view and click the "+" button to open the new ARP-poison-routing pairing dialog.
+61.	In the left column select the victim host (e.g. the test VM's IP), and in the right column select the gateway IP, then click OK to add the pair.
+62.	Click the yellow radiation/poison icon in the toolbar to start ARP poisoning. Cain & Abel now continuously sends forged ARP replies to both the victim and the gateway, positioning the attacker machine between them.
+63.	On the victim VM, run arp -a and observe that the MAC address listed for the gateway's IP now matches the attacker's MAC — direct evidence the ARP cache has been poisoned.
+64.	Return to Cain & Abel's Sniffer/Passwords tabs to observe captured traffic passing through the attacker machine from the victim's unencrypted sessions (where present).
+65.	Stop the attack by clicking the poison icon again to deactivate APR, and verify on the victim that arp -a reverts to the correct gateway MAC after the ARP cache refreshes (or run arp -d * to clear it manually).
+66.	Document mitigations: static ARP entries for critical hosts, Dynamic ARP Inspection (DAI) on managed switches, port security, and encrypting traffic end-to-end (HTTPS/TLS/VPN) so a MITM position yields only ciphertext.
+Note: Perform this practical only inside an isolated lab network you control. Running ARP poisoning on a shared, production, or public network without explicit authorisation is illegal under the IT Act, 2000 and equivalent laws, and will disrupt other users' connectivity.
+Conclusion
+ARP's lack of authentication was exploited in a controlled lab using Cain & Abel's APR module to achieve a man-in-the-middle position between a victim host and the gateway, demonstrating both the mechanics of the attack and the switch-level/cryptographic defences (DAI, static ARP, TLS) that mitigate it in production
